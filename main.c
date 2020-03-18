@@ -41,6 +41,7 @@ __error__(char *pcFilename, uint32_t ui32Line)
 }
 #endif
 
+// Global Variables
 uint32_t STEP_SIZE = 1000;
 uint32_t low_bound = 10000;
 uint32_t high_bound = 2000000;
@@ -69,9 +70,34 @@ uint32_t voltCode[4];
  * D0, D1, D3
  */
 
+// Function Prototypes
+void PeriphEnable(void);
+void PinConfig(void);
+void SSIIit(void);
+void FreqRegBits(uint32_t step);
+void SineWavePulse(void);
+void voltCodeGenerator(uint32_t voltage1, uint32_t voltage2, uint32_t voltage3, uint32_t voltage4, uint32_t refVoltage);
+void DCVoltage(void);
 
-void
-PeriphEnable(void){
+
+
+
+
+int main(void)
+{
+    PeriphEnable();
+    PinConfig();
+    //ADCInit();
+    //UARTInit();
+    SSIInit();
+    voltCodeGenerator(voltage1, voltage2, voltage3, voltage4, refVoltage);
+    DCVoltage();
+    SysCtlDelay(100000);
+    SineWavePulse();
+}
+
+void PeriphEnable(void)
+{
     SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI1);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
@@ -83,8 +109,8 @@ PeriphEnable(void){
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 }
 
-void
-PinConfig(void){
+void PinConfig(void)
+{
     GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_2);
     GPIOPinConfigure(GPIO_PA0_U0RX);
     GPIOPinConfigure(GPIO_PA1_U0TX);
@@ -116,8 +142,8 @@ UARTInit(void){
     IntMasterEnable();
 }
 */
-void
-SSIInit(void){
+void SSIInit(void)
+{
     SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
     SSIConfigSetExpClk(SSI0_BASE,SysCtlClockGet(),SSI_FRF_MOTO_MODE_2,SSI_MODE_MASTER,5000,16);
     SSIConfigSetExpClk(SSI1_BASE,SysCtlClockGet(),SSI_FRF_MOTO_MODE_0,SSI_MODE_MASTER,5000,11);
@@ -145,8 +171,8 @@ DataSend(uint32_t data1, uint32_t data2, uint32_t data3, uint32_t ui32Count){
     }
 }
 */
-void
-FreqRegBits(uint32_t step){
+void FreqRegBits(uint32_t step)
+{
    // uint32_t rows = (int)((high_bound - low_bound)/STEP_SIZE);
     uint32_t reg;
     //for(step = 0; step < rows; i++){
@@ -216,8 +242,9 @@ PulseCounter(void){
     return 1;
 }
 */
-void
-SineWavePulse(void){
+
+void SineWavePulse(void)
+{
     uint32_t rows = (int)((high_bound - low_bound)/STEP_SIZE);
     //highest frequency that can be in the first 14 bits of the frequency register is 976.5 Hz which is below the predetermined start
     //frequency of 1000 Hz. The lower 14 bits will still be programmed in but there will be logic to determine if they're needed or not.
@@ -261,9 +288,8 @@ SineWavePulse(void){
     }
 }
 
-void
-voltCodeGenerator(uint32_t voltage1, uint32_t voltage2, uint32_t voltage3, uint32_t voltage4, uint32_t refVoltage){
-
+void voltCodeGenerator(uint32_t voltage1, uint32_t voltage2, uint32_t voltage3, uint32_t voltage4, uint32_t refVoltage)
+{
     voltCode[0] = (int)((voltage1 * 256)/refVoltage);
     voltCode[1] = (int)((voltage2 * 256)/refVoltage);
     voltCode[2] = (int)((voltage3 * 256)/refVoltage);
@@ -271,8 +297,8 @@ voltCodeGenerator(uint32_t voltage1, uint32_t voltage2, uint32_t voltage3, uint3
 
 }
 
-void
-DCVoltage(void){
+void DCVoltage(void)
+{
     uint32_t location1 = 0;
     uint32_t location2 = (0b01000000000);
     uint32_t location3 = (0b10000000000);
@@ -293,17 +319,4 @@ DCVoltage(void){
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_6, 0b0);
     SysCtlDelay(1000);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_6, 0b1);
-}
-
-int main(void){
-    PeriphEnable();
-    PinConfig();
-    //ADCInit();
-    //UARTInit();
-    SSIInit();
-    voltCodeGenerator(voltage1, voltage2, voltage3, voltage4, refVoltage);
-    DCVoltage();
-    SysCtlDelay(100000);
-    SineWavePulse();
-
 }
